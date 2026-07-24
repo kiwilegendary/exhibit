@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Trial Navigation Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .glass-panel { background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(12px); border: 1px solid #334155; }
+        .mark-row { transition: all 0.2s ease; }
+        .mark-next { border-left: 6px solid #38bdf8; background: #1e3a8a; transform: scale(1.01); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .mark-passed { opacity: 0.4; border-left: 6px solid #10b981; }
+        .instruction-badge { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; padding: 2px 8px; border-radius: 4px; background: #334155; color: #cbd5e1; }
+        .instr-port { background: #7f1d1d; color: #fca5a5; }
+        .instr-starboard { background: #14532d; color: #86efac; }
+        .clock-display { font-variant-numeric: tabular-nums; }
+        /* Custom Slider Styling */
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 22px; width: 22px; border-radius: 50%; background: #38bdf8; cursor: pointer; margin-top: -9px; box-shadow: 0 0 12px rgba(56, 189, 248, 0.6); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #475569; border-radius: 2px; }
+    </style>
+</head>
+<body class="p-4 md:p-6 min-h-screen">
+
+    <div class="max-w-4xl mx-auto space-y-6">
+        <!-- Main Dashboard Header (Static) -->
+        <header class="glass-panel p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-6">
+            <div>
+                <h1 class="text-3xl font-black text-sky-400 tracking-tight">TIME TRIAL DASHBOARD</h1>
+                <p class="text-emerald-400 font-medium text-sm flex items-center gap-2 mt-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Local File Mode Ready
+                </p>
+            </div>
+        </header>
+
+        <!-- Configuration Panel -->
+        <section id="configPanel" class="glass-panel p-6 rounded-2xl space-y-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold text-slate-400 uppercase">Club (For Memory)</label>
+                    <select id="clubSel" class="bg-slate-800 border border-slate-600 rounded-lg p-3 text-white font-bold focus:ring-2 focus:ring-sky-500 outline-none">
+                        <option value="sopyc">SoPYC</option>
+                        <option value="pyc">PYC</option>
+                        <option value="cyc">CYC</option>
+                        <option value="rfbyc">RFBYC</option>
+                        <option value="rpyc">RPYC</option>
+                        <option value="pfsyc">PFSYC</option>
+                        <option value="mofsc">MOFSC</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold text-slate-400 uppercase">Course Number</label>
+                    <input type="text" id="courseSel" value="401" class="bg-slate-800 border border-slate-600 rounded-lg p-3 text-white font-bold focus:ring-2 focus:ring-sky-500 outline-none placeholder-slate-500">
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold text-slate-400 uppercase">Speed</label>
+                    <select id="speedSel" class="bg-slate-800 border border-slate-600 rounded-lg p-3 text-white font-bold focus:ring-2 focus:ring-sky-500 outline-none">
+                        <option value="5">5 Knots</option>
+                        <option value="6" selected>6 Knots</option>
+                        <option value="7">7 Knots</option>
+                        <option value="8">8 Knots</option>
+                        <option value="9">9 Knots</option>
+                        <option value="10">10 Knots</option>
+                        <option value="11">11 Knots</option>
+                        <option value="12">12 Knots</option>
+                        <option value="15">15 Knots</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs font-bold text-slate-400 uppercase">Start Time</label>
+                    <input type="time" id="startTime" step="1" value="14:00:00" class="bg-slate-800 border border-slate-600 rounded-lg p-3 text-white font-bold focus:ring-2 focus:ring-sky-500 outline-none">
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+                <button onclick="fetchCourse()" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 rounded-xl transition-colors text-sm border border-slate-600 shadow-md">
+                    Fetch Course (Web/Memory)
+                </button>
+                
+                <input type="file" id="fileInput" accept=".htm,.html" class="hidden" onchange="handleLocalFile(event)">
+                <button onclick="document.getElementById('fileInput').click()" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold py-4 rounded-xl transition-colors text-sm border-2 border-dashed border-emerald-500/50 shadow-md">
+                     Load Local .HTM File
+                </button>
+
+                <button id="startBtn" onclick="startRace()" disabled class="bg-sky-600 hover:bg-sky-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-sky-900/20 text-lg">
+                    START COUNTDOWN
+                </button>
+            </div>
+            
+            <div id="statusMsg" class="text-center text-sm font-medium text-sky-300 hidden"></div>
+        </section>
+
+        <!-- STICKY HUD: Clocks & Sync Slider -->
+        <div class="sticky top-2 z-50 glass-panel p-4 md:p-5 rounded-2xl mb-4 shadow-2xl bg-slate-900/95 border border-sky-500/40 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-8">
+            
+            <!-- Reference CPYA -->
+            <div class="text-center md:text-left w-full md:w-auto flex flex-col items-center md:items-start">
+                <div class="text-sky-400 text-[10px] font-black uppercase tracking-widest mb-1">CPYA Reference</div>
+                <div class="bg-slate-800 rounded-md p-1 border border-slate-600 inline-block shadow-inner">
+                    <iframe src="https://free.timeanddate.com/clock/iaep0xdh/n196/fs22" frameborder="0" width="177" height="27"></iframe>
+                </div>
+            </div>
+
+            <!-- Adjusted System Clock -->
+            <div class="text-center flex-1 w-full border-y md:border-y-0 md:border-x border-slate-700/50 py-3 md:py-0">
+                <div class="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-1">Adjusted Sync Time</div>
+                <div id="sysClock" class="text-5xl md:text-6xl font-mono font-black text-white clock-display tracking-tight leading-none drop-shadow-md">--:--:--</div>
+            </div>
+
+            <!-- Fine Sync Slider -->
+            <div class="w-full md:w-64 bg-slate-800/80 p-3 rounded-xl border border-slate-600/80 shadow-inner">
+                <div class="flex justify-between items-center text-xs font-bold uppercase tracking-wide mb-2">
+                    <span class="text-slate-400">Fine Adjust</span>
+                    <span id="offsetDisplay" class="text-sky-400 bg-slate-900 px-2 py-1 rounded shadow">0.00s</span>
+                </div>
+                <input type="range" id="timeOffset" min="-1" max="1" value="0" step="0.05" class="w-full">
+                <div class="flex justify-between text-[10px] text-slate-500 font-bold mt-1 px-1">
+                    <span>-1.0s</span>
+                    <span>0</span>
+                    <span>+1.0s</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Marks Container (Scrolling Area) -->
+        <main id="marksContainer" class="space-y-3 pb-32"></main>
+    </div>
+
+<script>
+    let raceStartTime = null;
+    let marksData = [];
+    let selectedSpeed = 6;
+    let timeOffsetSeconds = 0; 
+
+    // Handle Fine Slider Change
+    document.getElementById('timeOffset').addEventListener('input', function(e) {
+        timeOffsetSeconds = parseFloat(e.target.value);
+        const sign = timeOffsetSeconds > 0 ? '+' : '';
+        document.getElementById('offsetDisplay').innerText = `${sign}${timeOffsetSeconds.toFixed(2)}s`;
+    });
+
+    // Keep System Clock Updated with Offset 
+    setInterval(() => {
+        const realNow = Date.now();
+        const adjustedNow = new Date(realNow + (timeOffsetSeconds * 1000));
+        
+        document.getElementById('sysClock').innerText = adjustedNow.toTimeString().split(' ')[0];
+        
+        if (raceStartTime) updateRaceUI(adjustedNow);
+    }, 30);
+
+    function timeToSeconds(timeStr) {
+        if (!timeStr) return 0;
+        const p = timeStr.trim().split(':').map(Number);
+        if (p.length === 3) return (p[0] * 3600) + (p[1] * 60) + p[2];
+        if (p.length === 2) return (p[0] * 60) + p[1];
+        return 0;
+    }
+
+    function secondsToTimeStr(totalSeconds) {
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    function setStatus(msg, type = 'info') {
+        const el = document.getElementById('statusMsg');
+        el.innerText = msg;
+        if (type === 'error') el.className = `text-center text-sm font-bold mt-2 text-red-400`;
+        else if (type === 'success') el.className = `text-center text-sm font-bold mt-2 text-emerald-400`;
+        else el.className = `text-center text-sm font-bold mt-2 text-sky-400`;
+        el.style.display = 'block';
+    }
+
+    // Local File Reader
+    function handleLocalFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const speed = parseInt(document.getElementById('speedSel').value);
+        selectedSpeed = speed;
+        setStatus(`Reading local file: ${file.name}...`);
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                parseCourseHTML(e.target.result, speed);
+                setStatus(`Loaded local file successfully for ${speed} knots!`, 'success');
+                document.getElementById('startBtn').disabled = false;
+                renderMarksPreview();
+            } catch (err) {
+                setStatus(`Error parsing file: Make sure it's a valid Sportspage HTM file.`, 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // Web Fetch with Memory Caching
+    async function fetchCourse() {
+        const club = document.getElementById('clubSel').value;
+        const course = document.getElementById('courseSel').value.trim();
+        const speed = parseInt(document.getElementById('speedSel').value);
+        selectedSpeed = speed;
+        
+        const startBtn = document.getElementById('startBtn');
+        const container = document.getElementById('marksContainer');
+        startBtn.disabled = true;
+        container.innerHTML = '';
+        
+        const cacheKey = `course_${club}_${course}_${speed}`;
+        const cachedData = localStorage.getItem(cacheKey);
+        
+        if (cachedData) {
+            marksData = JSON.parse(cachedData);
+            setStatus(`Loaded Course ${course} (${speed}kts) instantly from Device Memory.`, 'success');
+            startBtn.disabled = false;
+            renderMarksPreview();
+            return;
+        }
+
+        setStatus(`Not in memory. Fetching from web via Proxy...`);
+        const speedBracket = speed <= 9 ? '5-9' : '10-15';
+        const targetUrl = `https://www.sportspage.com.au/pyc/${club}/courses/Course_${course}_${speedBracket}.htm`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
+        try {
+            const response = await fetch(proxyUrl);
+            const data = await response.json();
+            
+            if (!data.contents || data.contents.includes("404 Not Found")) {
+                throw new Error("Course file not found on server.");
+            }
+
+            parseCourseHTML(data.contents, speed);
+            localStorage.setItem(cacheKey, JSON.stringify(marksData));
+            
+            setStatus(`Downloaded & Saved Course ${course} to memory for future offline use.`, 'success');
+            startBtn.disabled = false;
+            renderMarksPreview();
+
+        } catch (error) {
+            console.error(error);
+            setStatus(`Web Fetch Failed. Try loading a local .HTM file instead.`, 'error');
+        }
+    }
+
+    function parseCourseHTML(htmlString, targetSpeed) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlString, 'text/html');
+        const table = doc.querySelector('table');
+        
+        if (!table) throw new Error("No table found in document.");
+
+        const rows = Array.from(table.querySelectorAll('tr'));
+        const headers = Array.from(rows[0].querySelectorAll('td, th')).map(h => h.innerText.trim().toLowerCase());
+
+        const markIdx = headers.findIndex(h => h.includes('mark'));
+        const roundIdx = headers.findIndex(h => h.includes('round') || h.includes('instruction') || h.includes('leave'));
+        const speedColName = `${targetSpeed} knots`;
+        const timeIdx = headers.findIndex(h => h === speedColName);
+
+        if (markIdx === -1 || timeIdx === -1) {
+            throw new Error("Required columns not found in table header.");
+        }
+
+        marksData = rows.slice(1).map(row => {
+            const cells = Array.from(row.querySelectorAll('td'));
+            if (cells.length <= timeIdx) return null;
+
+            const name = cells[markIdx]?.innerText.trim();
+            const instruction = roundIdx !== -1 ? cells[roundIdx]?.innerText.trim() : "";
+            const timeStr = cells[timeIdx]?.innerText.trim();
+
+            if (!name || !timeStr || !timeStr.includes(':')) return null;
+
+            return {
+                name: name,
+                instruction: instruction,
+                timeOffset: timeToSeconds(timeStr)
+            };
+        }).filter(Boolean);
+
+        if (marksData.length === 0) throw new Error("No marks successfully parsed.");
+    }
+
+    function renderMarksPreview() {
+        const container = document.getElementById('marksContainer');
+        container.innerHTML = '';
+        
+        const stInput = document.getElementById('startTime').value;
+        const [h, m, s] = stInput.split(':').map(Number);
+        const dummyStart = new Date();
+        dummyStart.setHours(h, m, s || 0, 0);
+
+        marksData.forEach((mark, i) => {
+            const targetTime = new Date(dummyStart.getTime() + (mark.timeOffset * 1000));
+            const targetStr = targetTime.toTimeString().split(' ')[0];
+            
+            let instrClass = 'instruction-badge';
+            let instrText = mark.instruction;
+            if (instrText.toLowerCase().includes('port')) instrClass += ' instr-port';
+            else if (instrText.toLowerCase().includes('starb')) instrClass += ' instr-starboard';
+            
+            const badgeHtml = instrText ? `<span class="${instrClass}">${instrText}</span>` : '';
+
+            const html = `
+                <div id="markRow-${i}" class="glass-panel p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mark-row border-l-4 border-slate-600">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-1">
+                            <span class="text-slate-500 font-bold text-xs tracking-widest uppercase">MARK ${i+1}</span>
+                            ${badgeHtml}
+                        </div>
+                        <div class="text-lg font-bold text-slate-100">${mark.name}</div>
+                    </div>
+                    <div class="text-left md:text-right w-full md:w-auto flex flex-row md:flex-col justify-between md:justify-end items-center md:items-end border-t md:border-t-0 border-slate-700 pt-3 md:pt-0">
+                        <div class="text-slate-400 font-mono text-sm tracking-wide">ETA: ${targetStr}</div>
+                        <div id="cd-${i}" class="text-2xl font-mono font-black text-sky-400 clock-display">Waiting</div>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+        });
+    }
+
+    function startRace() {
+        const stInput = document.getElementById('startTime').value;
+        const [h, m, s] = stInput.split(':').map(Number);
+        raceStartTime = new Date();
+        raceStartTime.setHours(h, m, s || 0, 0);
+        
+        renderMarksPreview(); 
+        
+        document.getElementById('startBtn').innerText = "RACING";
+        document.getElementById('startBtn').classList.replace('bg-sky-600', 'bg-emerald-600');
+        document.getElementById('configPanel').classList.add('opacity-50', 'pointer-events-none');
+    }
+
+    function updateRaceUI(adjustedNow) {
+        let activeMarkFound = false;
+        
+        const nowSecs = Math.floor(adjustedNow.getTime() / 1000);
+
+        marksData.forEach((mark, i) => {
+            const targetTime = new Date(raceStartTime.getTime() + (mark.timeOffset * 1000));
+            const targetSecs = Math.floor(targetTime.getTime() / 1000);
+            
+            const diffSeconds = targetSecs - nowSecs;
+            
+            const rowEl = document.getElementById(`markRow-${i}`);
+            const cdEl = document.getElementById(`cd-${i}`);
+
+            if (diffSeconds >= 0) {
+                cdEl.innerText = secondsToTimeStr(diffSeconds);
+                if (!activeMarkFound) {
+                    rowEl.className = 'glass-panel p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mark-row mark-next';
+                    cdEl.className = 'text-4xl font-mono font-black text-white clock-display drop-shadow-md';
+                    activeMarkFound = true;
+                } else {
+                    rowEl.className = 'glass-panel p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mark-row border-l-4 border-slate-600';
+                    cdEl.className = 'text-2xl font-mono font-black text-sky-400 clock-display';
+                }
+            } else {
+                cdEl.innerText = "PASSED";
+                rowEl.className = 'glass-panel p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mark-row mark-passed';
+                cdEl.className = 'text-xl font-mono font-black text-slate-500 clock-display';
+            }
+        });
+    }
+</script>
+</body>
+</html>
